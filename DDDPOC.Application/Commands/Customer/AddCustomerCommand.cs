@@ -1,10 +1,12 @@
-﻿using DDDPOC.Infrastructure.Repositories;
+﻿using DDDPOC.Application.Commands.Customer;
+using DDDPOC.Domain.Aggregates;
+using DDDPOC.Infrastructure.EventBus;
+using DDDPOC.Infrastructure.Repositories;
 using MediatR;
 using System.ComponentModel.DataAnnotations;
-using DDDPOC.Domain.Aggregates;
 
 
-namespace DDDPOC.Application.Commands
+namespace DDDPOC.Application
 {
     public class AddCustomerCommand : IRequest<bool>
     {
@@ -20,12 +22,16 @@ namespace DDDPOC.Application.Commands
     {
         private readonly IRepository<Customer, Guid> _customerRepo;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IEventBus _eventBus;
+
 
         public AddCustomerHandler(IRepository<Customer, Guid> customerRepo,
-                                IUnitOfWork unitOfWork)
+                                IUnitOfWork unitOfWork,
+                                IEventBus eventBus)
         {
             _customerRepo = customerRepo;
             _unitOfWork = unitOfWork;
+            _eventBus = eventBus;
         }
         public async Task<bool> Handle(AddCustomerCommand request, CancellationToken cancellationToken)
         {
@@ -35,6 +41,13 @@ namespace DDDPOC.Application.Commands
                 _customerRepo.Add(customer);
                 _unitOfWork.SaveChanges();
                 await _customerRepo.RaisEvents(customer);
+                await _eventBus.PublishAsync(new CreateCustomerEvent()
+                {
+                    Id = customer.Id,
+                    CustomerName = customer.CustomerName,
+                    Address = customer.Address,
+                    Email = customer.Email,
+                },cancellationToken);
                 return true;
             }
             catch (Exception ex)

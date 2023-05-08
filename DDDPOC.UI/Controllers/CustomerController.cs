@@ -1,4 +1,4 @@
-﻿using DDDPOC.Application.Commands;
+﻿using DDDPOC.Application;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

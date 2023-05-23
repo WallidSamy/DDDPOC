@@ -4,14 +4,17 @@ using DDDPOC.Infrastructure.Infrastructure.Data;
 using DDDPOC.Infrastructure.MessageBroker;
 using DDDPOC.Infrastructure.Repositories;
 using DDDPOC.UI.Authentication;
+using DDDPOC.UI.Keycloack;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,8 +42,9 @@ builder.Services.AddMassTransit(busConfigurator =>
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(AppDomain.CurrentDomain.Load("DDDPOC.Application")));
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddTransient<IClaimsTransformation, ClaimsTransformer>();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.Load("DDDPOC.Application"));
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: "test",
@@ -74,7 +78,8 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
 builder.Services.AddScoped(typeof(IUnitOfWork), typeof(UnitOfWork));
 builder.Services.AddTransient<IEventBus, EventBus>();
-builder.Services.ConfigureJWT(builder.Environment.IsDevelopment(), "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtQITuTQmQ7I8gIxsEuOr2X7DJPU+ObqEdqKAUQeHiE+yNwJI46qd5RFe1h0YoFlc1pvJrmN8upC2moBWHE50XTHyr8Byf8fsv6xMDU3Oal1GWELR3JIC7LNbcKYZOHHBvnNI9/4MO+Tp63kr/0r4/pXunQ0unokKkjDuCJLjkHV1VZxQBMEhK+/7jBSjrzzn9LlCfYtUKpVmNe6VVhb10mFlJQD/3CureyL1d6o/Ex0jtjqYuWavGttSI6hzMLlvDPc0oU5BhqqTuw9jhDgkhRGKeIgaRZhXkxoGf2bDt9UJJqX/1UAp7sm5uBWr1ni9lIO4f28aVbK70joIYf7uEQIDAQAB");
+var keycloackConfig = builder.Configuration.GetSection("KeycloackConfig").Get<KeycloackConfig>();
+builder.Services.ConfigureJWTWithKeycloack(builder.Environment.IsDevelopment(), keycloackConfig);
 builder.Services.TryAddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.TryAddSingleton<IClaimsTransformation, NoopClaimsTransformation>();
 builder.Services.TryAddScoped<IAuthenticationHandlerProvider, AuthenticationHandlerProvider>();
@@ -92,6 +97,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("test");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

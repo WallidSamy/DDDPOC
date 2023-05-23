@@ -7,7 +7,7 @@ namespace DDDPOC.UI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "User")]
     public class ProductController : ControllerBase
     {
         private static readonly string[] Products = new[]

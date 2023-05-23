@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using DDDPOC.UI.Keycloack;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 
@@ -21,7 +23,7 @@ namespace DDDPOC.UI.Authentication
 
             return IssuerSigningKey;
         }
-        public static void ConfigureJWT(this IServiceCollection services, bool IsDevelopment, string publicKeyJWT)
+        public static void ConfigureJWTWithKeycloack(this IServiceCollection services, bool IsDevelopment, KeycloackConfig keycloackConfig)
         {
             var AuthenticationBuilder = services.AddAuthentication(options =>
             {
@@ -38,9 +40,9 @@ namespace DDDPOC.UI.Authentication
                 {
                     ValidateAudience = false,
                     ValidateIssuer = true,
-                    ValidIssuers = new[] { "http://localhost:8080/realms/DDDPOC" },
+                    ValidIssuers = new[] { $"{keycloackConfig.Host}/realms/{keycloackConfig.Realm}" },
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = BuildRSAKey(publicKeyJWT),
+                    IssuerSigningKey = BuildRSAKey(keycloackConfig.PublicKeyJWT),
                     ValidateLifetime = true
                 };
                 #endregion
